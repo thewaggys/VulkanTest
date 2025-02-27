@@ -35,6 +35,7 @@ struct PipelineConfigInfo {
 		LvePipeline(const LvePipeline&) = delete;
 		void operator=(const LvePipeline&) = delete;
 
+		void bind(VkCommandBuffer commandBuffer);
 		static PipelineConfigInfo defaultPipelineConfigInfo(uint32_t width, uint32_t height);
 
 	private:

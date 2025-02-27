@@ -113,6 +113,12 @@
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\vulkanSDK\Lib;C:\Visual_Studio\Libraries\glfw-3.4.bin.WIN64\lib-vc2022;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>set SHADER_DIR=C:\Path\To\Your\Shaders
+
+for %%f in (%SHADER_DIR%\*.vert %SHADER_DIR%\*.frag %SHADER_DIR%\*.comp %SHADER_DIR%\*.geom %SHADER_DIR%\*.tesc %SHADER_DIR%\*.tese) do C:\vulkanSDK\Bin\glslc.exe %%f -o %%~dpnf.spv
+</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -133,10 +139,17 @@
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\vulkanSDK\Lib;C:\Visual_Studio\Libraries\glfw-3.4.bin.WIN64\lib-vc2022;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>set SHADER_DIR=C:\Path\To\Your\Shaders
+
+for %%f in (%SHADER_DIR%\*.vert %SHADER_DIR%\*.frag %SHADER_DIR%\*.comp %SHADER_DIR%\*.geom %SHADER_DIR%\*.tesc %SHADER_DIR%\*.tese) do C:\vulkanSDK\Bin\glslc.exe %%f -o %%~dpnf.spv
+</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="first_app.cpp" />
     <ClCompile Include="first_app.hpp" />
+    <ClCompile Include="Lve_model.cpp" />
     <ClCompile Include="Lve_pipeline.cpp" />
     <ClCompile Include="Lve_window.cpp" />
     <ClCompile Include="main.cpp" />
@@ -144,15 +157,16 @@
     <ClCompile Include="Lve_swap_chain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="lve_model.hpp" />
     <ClInclude Include="Lve_pipeline.hpp" />
     <ClInclude Include="Lve_window.hpp" />
     <ClInclude Include="Lve_device.hpp" />
     <ClInclude Include="Lve_swap_chain.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="compile.bat" />
     <None Include="Shaders\simple_shader.frag" />
     <None Include="Shaders\simple_shader.frag.spv" />
+    <None Include="Shaders\simple_shader.spv" />
     <None Include="Shaders\simple_shader.vert" />
     <None Include="Shaders\simple_shader.vert.spv" />
     <None Include="simple_shader.frag" />
