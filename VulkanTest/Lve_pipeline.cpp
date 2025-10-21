@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <iostream> 
 #include <cassert>
+#include <vulkan/vulkan_core.h>
 
 namespace Lve {
 	LvePipeline::LvePipeline(
@@ -103,6 +104,7 @@ namespace Lve {
 		pipelineInfo.pMultisampleState = &configInfo.multisampleInfo;
 
 		pipelineInfo.pColorBlendState = &configInfo.colorBlendInfo;
+		pipelineInfo.pDepthStencilState = &configInfo.depthStencilInfo;
 		pipelineInfo.pDynamicState = nullptr;
 
 		pipelineInfo.layout = configInfo.pipelineLayout;

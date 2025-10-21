@@ -15,6 +15,7 @@ namespace Lve {
 
 		struct Vertex {
 			glm::vec2 position;
+			glm::vec3 color;
 			
 			static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
 			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
@@ -31,9 +32,9 @@ namespace Lve {
 
 
 	private:
-		void createVertexBuffers(const std::vector<Vertex>& vertices);
+		void createVertexBuffers(const std::vector<Vertex> &vertices);
 
-		RenderDevice& lveDevice;
+		RenderDevice &lveDevice;
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexBufferMemory;
 		uint32_t vertexCount;

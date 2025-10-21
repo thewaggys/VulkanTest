@@ -35,7 +35,7 @@ class RenderDevice {
 
   // Not copyable or movable
   RenderDevice(const RenderDevice &) = delete;
-  void operator=(const RenderDevice &) = delete;
+  RenderDevice& operator=(const RenderDevice &) = delete;
   RenderDevice(RenderDevice &&) = delete;
   RenderDevice &operator=(RenderDevice &&) = delete;
 
