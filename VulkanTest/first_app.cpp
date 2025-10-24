@@ -116,7 +116,7 @@ namespace Lve {
 		}
 
 		vkDeviceWaitIdle(LveDevice.device());
-		lveSwapChain = std::make_unique<LveSwapChain>(LveDevice, extent);
+		lveSwapChain = std::make_unique<GameEngineSwapChain>(LveDevice, extent);
 		createPipeline();
 	}
 

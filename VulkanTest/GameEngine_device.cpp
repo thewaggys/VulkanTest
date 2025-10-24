@@ -1,4 +1,4 @@
-#include "Lve_device.hpp"
+#include "GameEngine_device.hpp"
 
 // std headers
 #include <cstring>

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Lve_window.hpp"
-#include "Lve_pipeline.hpp"
-#include "Lve_swap_chain.hpp"
-#include "Lve_device.hpp"
-#include "lve_model.hpp"
+#include "GameEngine_window.hpp"
+#include "GameEngine_pipeline.hpp"
+#include "GameEngine_swap_chain.hpp"
+#include "GameEngine_device.hpp"
+#include "GameEngine_model.hpp"
 
 #include <memory>
 #include <vector>
@@ -34,7 +34,7 @@ namespace Lve {
 
 		LveWindow LveWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
 		RenderDevice LveDevice{LveWindow};
-		std::unique_ptr<LveSwapChain> lveSwapChain;
+		std::unique_ptr<GameEngineSwapChain> lveSwapChain;
 		std::unique_ptr<LvePipeline> lvePipeline;
 		VkPipelineLayout pipelineLayout;
 		std::vector<VkCommandBuffer> commandBuffers;
