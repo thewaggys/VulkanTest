@@ -1,8 +1,8 @@
-#include "Lve_window.hpp"
+#include "GameEngine_window.hpp"
 
 #include <stdExcept>
 
-namespace Lve {
+namespace GameEngine {
 	LveWindow::LveWindow(int w, int h, std::string name) : width{ w }, height{ h }, windowName{ name } {
 		initWindow(); //Initialise window
 	}

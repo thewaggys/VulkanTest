@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Lve_window.hpp"
+#include "GameEngine_window.hpp"
 
 // std lib headers
 #include <string>
 #include <vector>
 
-namespace Lve {
+namespace GameEngine {
 
 struct SwapChainSupportDetails {
   VkSurfaceCapabilitiesKHR capabilities;
