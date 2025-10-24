@@ -1,4 +1,4 @@
-#include "Lve_swap_chain.hpp"
+#include "GameEngine_swap_chain.hpp"
 
 // std
 #include <array>
@@ -9,7 +9,7 @@
 #include <set>
 #include <stdexcept>
 
-namespace Lve {
+namespace GameEngine {
 
 LveSwapChain::LveSwapChain(RenderDevice &deviceRef, VkExtent2D extent)
     : device{deviceRef}, windowExtent{extent} {

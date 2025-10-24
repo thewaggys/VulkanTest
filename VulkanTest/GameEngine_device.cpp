@@ -1,4 +1,4 @@
-#include "Lve_device.hpp"
+#include "GameEngine_device.hpp"
 
 // std headers
 #include <cstring>
@@ -6,7 +6,7 @@
 #include <set>
 #include <unordered_set>
 
-namespace Lve {
+namespace GameEngine {
 
 // local callback functions
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(

@@ -1,15 +1,16 @@
 #pragma once
 
-#include "Lve_device.hpp"
+#include "GameEngine_device.hpp"
 
 // vulkan headers
 #include <vulkan/vulkan.h>
 
 // std lib headers
+#include <memory>
 #include <string>
 #include <vector>
 
-namespace Lve {
+namespace GameEngine {
 
 class LveSwapChain {
  public:

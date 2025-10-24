@@ -1,9 +1,9 @@
-#include "lve_model.hpp"
+#include "GameEngine_model.hpp"
 
 #include <cassert>
 #include <cstring>
 
-namespace Lve {
+namespace GameEngine {
 
 	LveModel::LveModel(RenderDevice& device, const std::vector<Vertex>& vertices) : lveDevice{ device } {
 		createVertexBuffers(vertices);

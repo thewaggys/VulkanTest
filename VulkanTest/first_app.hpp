@@ -1,15 +1,15 @@
 #pragma once
 
-#include "Lve_window.hpp"
-#include "Lve_pipeline.hpp"
-#include "Lve_swap_chain.hpp"
-#include "Lve_device.hpp"
-#include "lve_model.hpp"
+#include "GameEngine_window.hpp"
+#include "GameEngine_pipeline.hpp"
+#include "GameEngine_swap_chain.hpp"
+#include "GameEngine_device.hpp"
+#include "GameEngine_model.hpp"
 
 #include <memory>
 #include <vector>
 
-namespace Lve {
+namespace GameEngine {
 	class FirstApp {
 
 	public:
@@ -28,16 +28,17 @@ namespace Lve {
 		void createPipelineLayout();
 		void createPipeline();
 		void createCommandBuffers();
+		void registerModels(std::unique_ptr<LveModel>& model, int imageIndex);
 		void drawFrame();
 		void recreateSwapChain();
 		void recordCommandBuffer(int imageIndex);
 
 		LveWindow LveWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
-		RenderDevice LveDevice{LveWindow};
-		std::unique_ptr<LveSwapChain> lveSwapChain;
-		std::unique_ptr<LvePipeline> lvePipeline;
+		RenderDevice GameEngineDevice{LveWindow};
+		std::unique_ptr<LveSwapChain> gameEngineSwapChain;
+		std::unique_ptr<LvePipeline> gameEnginePipeline;
 		VkPipelineLayout pipelineLayout;
 		std::vector<VkCommandBuffer> commandBuffers;
-		std::unique_ptr<LveModel> lveModel;
+		std::unique_ptr<LveModel> gameEngineModel;
 	};
 }
