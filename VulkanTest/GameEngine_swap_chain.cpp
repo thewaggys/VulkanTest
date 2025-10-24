@@ -9,7 +9,7 @@
 #include <set>
 #include <stdexcept>
 
-namespace Lve {
+namespace GameEngine {
 
 GameEngineSwapChain::GameEngineSwapChain(RenderDevice &deviceRef, VkExtent2D extent)
     : device{deviceRef}, windowExtent{extent} {

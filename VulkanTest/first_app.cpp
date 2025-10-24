@@ -2,14 +2,14 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
 
 #include <stdexcept>
 #include <array>
 #include <iostream>
+#include <fstream>
+#include <GLFW/glfw3.h>
 
-
-namespace Lve {
+namespace GameEngine {
 
 	struct SimplePushConstantData {
 		glm::vec2 offset;
@@ -24,7 +24,7 @@ namespace Lve {
 		createCommandBuffers();
 	}
 	FirstApp::~FirstApp() {
-		vkDestroyPipelineLayout(LveDevice.device(), pipelineLayout, nullptr);
+		vkDestroyPipelineLayout(GameEngineDevice.device(), pipelineLayout, nullptr);
 	}
 	
 	void FirstApp::run() {
@@ -33,7 +33,7 @@ namespace Lve {
 			drawFrame();
 		}
 
-		vkDeviceWaitIdle(LveDevice.device());
+		vkDeviceWaitIdle(GameEngineDevice.device());
 	}
 
 	void FirstApp::loadModels()
@@ -48,7 +48,7 @@ namespace Lve {
 			std::cout << "Color: " << vertex.color.x << ", " << vertex.color.y << ", " << vertex.color.z << std::endl;
 		}
 
-		lveModel = std::make_unique<LveModel>(LveDevice, vertices);
+		gameEngineModel = std::make_unique<LveModel>(GameEngineDevice, vertices);
 	}
 
 	void FirstApp::createPipelineLayout()
@@ -66,7 +66,7 @@ namespace Lve {
 		pipelineLayoutInfo.pSetLayouts = nullptr;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-		if (vkCreatePipelineLayout(LveDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
+		if (vkCreatePipelineLayout(GameEngineDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
 			VK_SUCCESS
 			) {
 			throw std::runtime_error("failed to create pipeline layout!");
@@ -74,38 +74,16 @@ namespace Lve {
 	}
 
 
-
-
 	void FirstApp::createPipeline() {
-
-
-		auto pipelineConfig =
-
-
-			LvePipeline::defaultPipelineConfigInfo(lveSwapChain->width(), lveSwapChain->height());
-
-
-		pipelineConfig.renderPass = lveSwapChain->getRenderPass();
-
-
+		PipelineConfigInfo pipelineConfig{};
+		LvePipeline::defaultPipelineConfigInfo(pipelineConfig);
+		pipelineConfig.renderPass = gameEngineSwapChain->getRenderPass();
 		pipelineConfig.pipelineLayout = pipelineLayout;
-
-
-		lvePipeline = std::make_unique<LvePipeline>(
-
-
-			LveDevice,
-
-
-			"shaders/simple_shader.vert.spv",
-
-
-			"shaders/simple_shader.frag.spv",
-
-
+		gameEnginePipeline = std::make_unique<LvePipeline>(
+			GameEngineDevice,
+			"C:\\Programming\\Visual_Studio\\Projects\\VulkanTest\\VulkanTest\\Shaders\\simple_shader.vert.spv",
+			"C:\\Programming\\Visual_Studio\\Projects\\VulkanTest\\VulkanTest\\Shaders\\simple_shader.frag.spv",
 			pipelineConfig);
-
-
 	}
 
 	void FirstApp::recreateSwapChain() {
@@ -115,26 +93,31 @@ namespace Lve {
 			glfwWaitEvents();
 		}
 
-		vkDeviceWaitIdle(LveDevice.device());
-		lveSwapChain = std::make_unique<GameEngineSwapChain>(LveDevice, extent);
+		vkDeviceWaitIdle(GameEngineDevice.device());
+		gameEngineSwapChain = std::make_unique<LveSwapChain>(GameEngineDevice, extent);
 		createPipeline();
 	}
 
 	void FirstApp::createCommandBuffers() {
 
-		commandBuffers.resize(lveSwapChain->imageCount());
+		commandBuffers.resize(gameEngineSwapChain->imageCount());
 
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = LveDevice.getCommandPool();
+		allocInfo.commandPool = GameEngineDevice.getCommandPool();
 		allocInfo.commandBufferCount = static_cast<uint32_t> (commandBuffers.size());
 
-		if (vkAllocateCommandBuffers(LveDevice.device(), &allocInfo, commandBuffers.data()) !=
+		if (vkAllocateCommandBuffers(GameEngineDevice.device(), &allocInfo, commandBuffers.data()) !=
 			VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate command buffers!");
 		}
 	};
+
+	void FirstApp::registerModels(std::unique_ptr<LveModel>& model, int imageIndex) {
+       model->bind(commandBuffers[imageIndex]);  
+       model->draw(commandBuffers[imageIndex]);  
+    }
 
 	void FirstApp::recordCommandBuffer(int imageIndex) {
 		VkCommandBufferBeginInfo beginInfo{};
@@ -146,11 +129,11 @@ namespace Lve {
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = lveSwapChain->getRenderPass();
-		renderPassInfo.framebuffer = lveSwapChain->getFrameBuffer(imageIndex);
+		renderPassInfo.renderPass = gameEngineSwapChain->getRenderPass();
+		renderPassInfo.framebuffer = gameEngineSwapChain->getFrameBuffer(imageIndex);
 
 		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = lveSwapChain->getSwapChainExtent();
+		renderPassInfo.renderArea.extent = gameEngineSwapChain->getSwapChainExtent();
 
 		std::array<VkClearValue, 2> clearValues{};
 		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -160,26 +143,23 @@ namespace Lve {
 
 		vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		lvePipeline->bind(commandBuffers[imageIndex]);
-		lveModel->bind(commandBuffers[imageIndex]);
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(gameEngineSwapChain->getSwapChainExtent().width);
+		viewport.height = static_cast<float>(gameEngineSwapChain->getSwapChainExtent().height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		VkRect2D scissor{{0,0}, gameEngineSwapChain->getSwapChainExtent()};
+		vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
+		vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
 
-		for (int j = 0; j < 4; j++) {
-			SimplePushConstantData push{};
-			push.offset = { 0.0f, -0.4f + j * 0.25f };
-			push.color = { 0.0f, 0.0f, 0.2f + 0.2f * j };
+		gameEnginePipeline->bind(commandBuffers[imageIndex]);
+		gameEngineModel->bind(commandBuffers[imageIndex]);
+		gameEngineModel->draw(commandBuffers[imageIndex]);
 
-			vkCmdPushConstants(
-				commandBuffers[imageIndex], pipelineLayout,
-				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				0,
-				sizeof(SimplePushConstantData),
-				&push
-			);
-			lveModel->draw(commandBuffers[imageIndex]);
-		}
+		registerModels(gameEngineModel, imageIndex);
 
-
-		lveModel->draw(commandBuffers[imageIndex]);
 
 		vkCmdEndRenderPass(commandBuffers[imageIndex]);
 		if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
@@ -189,7 +169,7 @@ namespace Lve {
 
 	void FirstApp::drawFrame() {
 		uint32_t imageIndex;
-		auto result = lveSwapChain->acquireNextImage(&imageIndex);
+		auto result = gameEngineSwapChain->acquireNextImage(&imageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			recreateSwapChain();
@@ -201,7 +181,7 @@ namespace Lve {
 		}
 
 		recordCommandBuffer(imageIndex);
-		result = lveSwapChain->submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
+		result = gameEngineSwapChain->submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || LveWindow.wasWindowResized()) {
 			LveWindow.resetWindowResizedFlag();
 			recreateSwapChain();

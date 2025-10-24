@@ -1,11 +1,12 @@
 #pragma once
 
 #define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 
 #include <string>
+#include <GLFW/glfw3.h>
 
-namespace Lve {
+
+namespace GameEngine {
 
 	class LveWindow {
 
@@ -16,13 +17,13 @@ namespace Lve {
 		LveWindow(const LveWindow &) = delete;
 		LveWindow &operator=(const LveWindow &) = delete;
 
-		bool shouldClose() {
+		bool shouldClose() const {
 			return glfwWindowShouldClose(window);
 		}
-		VkExtent2D getExtent() { 
+		VkExtent2D getExtent() const {
 			return { static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 		}
-		bool wasWindowResized() {return framebufferResized;}
+		bool wasWindowResized() const {return framebufferResized;}
 		void resetWindowResizedFlag() { framebufferResized = false; }
 
 		void createWindowSurface(VkInstance instance, VkSurfaceKHR* surface);
@@ -36,7 +37,7 @@ namespace Lve {
 		bool framebufferResized = false;
 
 		std::string windowName; // Window Name
-		GLFWwindow* window; //means i dont have to check platform
+		GLFWwindow* window; //means i don't have to check platform
 
 	};
 }

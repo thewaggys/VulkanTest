@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace Lve {
+namespace GameEngine {
 
 struct SwapChainSupportDetails {
   VkSurfaceCapabilitiesKHR capabilities;
