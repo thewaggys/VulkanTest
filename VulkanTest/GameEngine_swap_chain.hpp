@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace Lve {
+namespace GameEngine {
 
 class GameEngineSwapChain {
  public:

@@ -26,7 +26,7 @@ namespace GameEngine {
 	FirstApp::~FirstApp() {
 		vkDestroyPipelineLayout(GameEngineDevice.device(), pipelineLayout, nullptr);
 	}
-	
+
 	void FirstApp::run() {
 		while (!LveWindow.shouldClose()) {
 			glfwPollEvents();
@@ -94,7 +94,7 @@ namespace GameEngine {
 		}
 
 		vkDeviceWaitIdle(GameEngineDevice.device());
-		gameEngineSwapChain = std::make_unique<LveSwapChain>(GameEngineDevice, extent);
+		gameEngineSwapChain = std::make_unique<GameEngineSwapChain>(GameEngineDevice, extent);
 		createPipeline();
 	}
 
@@ -115,8 +115,8 @@ namespace GameEngine {
 	};
 
 	void FirstApp::registerModels(std::unique_ptr<LveModel>& model, int imageIndex) {
-       model->bind(commandBuffers[imageIndex]);  
-       model->draw(commandBuffers[imageIndex]);  
+       model->bind(commandBuffers[imageIndex]);
+       model->draw(commandBuffers[imageIndex]);
     }
 
 	void FirstApp::recordCommandBuffer(int imageIndex) {
