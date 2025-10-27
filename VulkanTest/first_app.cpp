@@ -62,6 +62,11 @@ namespace GameEngine {
 		pipelineLayoutInfo.pSetLayouts = nullptr;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+		if (bool result = vkCreatePipelineLayout(GameEngineDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
+			VK_SUCCESS
+			) {
+			throw result;
+			}
 		VkResult result = vkCreatePipelineLayout(GameEngineDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout);
 		if (result != VK_SUCCESS) {
 			throw result;
@@ -85,13 +90,12 @@ namespace GameEngine {
 	}
 
 	void FirstApp::recreateSwapChain() {
+
 		auto extent = LveWindow.getExtent();
 		while (extent.width == 0 || extent.height == 0) {
 			extent = LveWindow.getExtent();
 			glfwWaitEvents();
 		}
-
-		vkDeviceWaitIdle(GameEngineDevice.device());
 
 		if (gameEngineSwapChain == nullptr) {
 			gameEngineSwapChain = std::make_unique<GameEngineSwapChain>(GameEngineDevice, extent);
@@ -115,8 +119,7 @@ namespace GameEngine {
 		allocInfo.commandPool = GameEngineDevice.getCommandPool();
 		allocInfo.commandBufferCount = static_cast<uint32_t> (commandBuffers.size());
 
-		VkResult result = vkAllocateCommandBuffers(GameEngineDevice.device(), &allocInfo, commandBuffers.data());
-		if (result != VK_SUCCESS) {
+		if (bool result = vkAllocateCommandBuffers(GameEngineDevice.device(), &allocInfo, commandBuffers.data())!= VK_SUCCESS) {
 			throw result;
 		}
 
@@ -140,8 +143,7 @@ namespace GameEngine {
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		VkResult result = vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo);
-		if (result != VK_SUCCESS) {
+		if (bool result = vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
 			throw result;
 		}
 
@@ -194,7 +196,7 @@ namespace GameEngine {
 
 		vkCmdEndRenderPass(commandBuffers[imageIndex]);
 
-		result = vkEndCommandBuffer(commandBuffers[imageIndex]);
+		VkResult result = vkEndCommandBuffer(commandBuffers[imageIndex]);
 		if (result != VK_SUCCESS) {
 			throw result;
 		}

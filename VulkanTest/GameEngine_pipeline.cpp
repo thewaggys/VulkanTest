@@ -5,7 +5,6 @@
 #include <stdexcept>
 #include <iostream> 
 #include <cassert>
-#include <cstring>
 #include <vulkan/vulkan_core.h>
 
 namespace GameEngine {
@@ -107,23 +106,20 @@ namespace GameEngine {
 		pipelineInfo.basePipelineIndex = -1;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-		VkResult result = vkCreateGraphicsPipelines(LveDevice.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline);
+		VkResult result = vkCreateGraphicsPipelines(LveDevice.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+		                                            &graphicsPipeline);
 		if (result != VK_SUCCESS) {
 			throw result;
 		}
 
 	}
 
-	void LvePipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) const {
+
+	void LvePipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) {
 		VkShaderModuleCreateInfo createInfo{};
-
-
-		std::vector<uint32_t> codeAligned(code.size());
-		std::memcpy(codeAligned.data(), code.data(), code.size());
-
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = codeAligned.size();
-		createInfo.pCode = codeAligned.data();
+		createInfo.codeSize = code.size();
+		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
 		VkResult result = vkCreateShaderModule(LveDevice.device(), &createInfo, nullptr, shaderModule);
 		if (result != VK_SUCCESS) {
@@ -131,7 +127,7 @@ namespace GameEngine {
 		}
 	}
 
-	void LvePipeline::bind(const VkCommandBuffer commandBuffer) const {
+	void LvePipeline::bind(VkCommandBuffer commandBuffer) {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 	}
 

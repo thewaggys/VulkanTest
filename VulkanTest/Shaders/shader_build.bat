@@ -31,7 +31,3 @@ for %%f in ("%SHADER_DIR%\*.vert") do (
     )
 )
 
-echo Shader compilation complete.
-
-:: Keep the terminal open
-pause

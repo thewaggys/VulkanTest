@@ -36,7 +36,7 @@ struct PipelineConfigInfo {
 		LvePipeline(const LvePipeline&) = delete;
 		LvePipeline& operator=(const LvePipeline&) = delete;
 
-		void bind(VkCommandBuffer commandBuffer) const;
+		void bind(VkCommandBuffer commandBuffer);
 		static void defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
 
 	private:
@@ -49,7 +49,7 @@ struct PipelineConfigInfo {
 
 		);
 
-		void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) const;
+		void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
 
 		RenderDevice& LveDevice;
 		VkPipeline graphicsPipeline;

@@ -1,9 +1,9 @@
 #include "GameEngine_window.hpp"
 
-#include <stdExcept>
+#include <stdexcept>
 
 namespace GameEngine {
-	LveWindow::LveWindow(int w, int h, std::string name) : width{ w }, height{ h }, windowName{ name } {
+	LveWindow::LveWindow(int w, int h, std::string const & name) : width{ w }, height{ h }, windowName{ name } {
 		initWindow(); //Initialise window
 	}
 
@@ -25,14 +25,15 @@ namespace GameEngine {
 
 
 	void LveWindow::createWindowSurface(VkInstance instance, VkSurfaceKHR* surface) {
-		if (glfwCreateWindowSurface(instance, window, nullptr, surface) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create window surface");
+		VkResult result = glfwCreateWindowSurface(instance, window, nullptr, surface);
+		if (result != VK_SUCCESS) {
+			throw result;
 		}
 
 
 	}
 	void LveWindow::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-		auto lveWindow = reinterpret_cast<LveWindow*>(glfwGetWindowUserPointer(window));
+		auto lveWindow = static_cast<LveWindow*>(glfwGetWindowUserPointer(window));
 		lveWindow->framebufferResized = true;
 		lveWindow->width = width;
 		lveWindow->height = height;
