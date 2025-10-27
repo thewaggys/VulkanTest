@@ -28,7 +28,7 @@ namespace GameEngine {
 		void createPipelineLayout();
 		void createPipeline();
 		void createCommandBuffers();
-
+		void freeCommandBuffers();
 		void registerModels(std::unique_ptr<LveModel> &model, int imageIndex);
 
 		void drawFrame();
