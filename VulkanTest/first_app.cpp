@@ -1,8 +1,9 @@
 #include "first_app.hpp"
 
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-
+#include <glm/glm.hpp>
 #include <stdexcept>
 #include <array>
 #include <iostream>
@@ -13,7 +14,7 @@ namespace GameEngine {
 
 	struct SimplePushConstantData {
 		glm::vec2 offset;
-		glm::vec3 color;
+		alignas(16) glm::vec3 color;
 
 	};
 
@@ -53,7 +54,6 @@ namespace GameEngine {
 
 	void FirstApp::createPipelineLayout()
 	{
-
 		VkPushConstantRange pushConstantRange{};
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		pushConstantRange.offset = 0;
@@ -66,23 +66,26 @@ namespace GameEngine {
 		pipelineLayoutInfo.pSetLayouts = nullptr;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-		if (vkCreatePipelineLayout(GameEngineDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
+		if (bool result = vkCreatePipelineLayout(GameEngineDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
 			VK_SUCCESS
 			) {
-			throw std::runtime_error("failed to create pipeline layout!");
+			throw result;
 		}
 	}
 
 
 	void FirstApp::createPipeline() {
+		assert(gameEngineSwapChain != nullptr && "Cannot create pipeline before swapchain!");
+		assert(pipelineLayout != nullptr && "Cannot create pipeline before pipelineLayout!");
+
 		PipelineConfigInfo pipelineConfig{};
 		LvePipeline::defaultPipelineConfigInfo(pipelineConfig);
 		pipelineConfig.renderPass = gameEngineSwapChain->getRenderPass();
 		pipelineConfig.pipelineLayout = pipelineLayout;
 		gameEnginePipeline = std::make_unique<LvePipeline>(
 			GameEngineDevice,
-			"C:\\Programming\\Visual_Studio\\Projects\\VulkanTest\\VulkanTest\\Shaders\\simple_shader.vert.spv",
-			"C:\\Programming\\Visual_Studio\\Projects\\VulkanTest\\VulkanTest\\Shaders\\simple_shader.frag.spv",
+			R"(C:\Programming\Visual_Studio\Projects\VulkanTest\VulkanTest\Shaders\simple_shader.vert.spv)",
+			R"(C:\Programming\Visual_Studio\Projects\VulkanTest\VulkanTest\Shaders\simple_shader.frag.spv)",
 			pipelineConfig);
 	}
 
@@ -94,7 +97,16 @@ namespace GameEngine {
 		}
 
 		vkDeviceWaitIdle(GameEngineDevice.device());
-		gameEngineSwapChain = std::make_unique<GameEngineSwapChain>(GameEngineDevice, extent);
+
+		if (gameEngineSwapChain == nullptr) {
+			gameEngineSwapChain = std::make_unique<GameEngineSwapChain>(GameEngineDevice, extent);
+		} else {
+			gameEngineSwapChain = std::make_unique<GameEngineSwapChain>(GameEngineDevice, extent, std::move(gameEngineSwapChain));
+			if (gameEngineSwapChain->imageCount() != commandBuffers.size()) {
+				freeCommandBuffers();
+				createCommandBuffers();
+			}
+		}
 		createPipeline();
 	}
 
@@ -108,24 +120,35 @@ namespace GameEngine {
 		allocInfo.commandPool = GameEngineDevice.getCommandPool();
 		allocInfo.commandBufferCount = static_cast<uint32_t> (commandBuffers.size());
 
-		if (vkAllocateCommandBuffers(GameEngineDevice.device(), &allocInfo, commandBuffers.data()) !=
-			VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate command buffers!");
+		if (bool result = vkAllocateCommandBuffers(GameEngineDevice.device(), &allocInfo, commandBuffers.data())!= VK_SUCCESS) {
+			throw result;
 		}
-	};
 
-	void FirstApp::registerModels(std::unique_ptr<LveModel>& model, int imageIndex) {
-       model->bind(commandBuffers[imageIndex]);
-       model->draw(commandBuffers[imageIndex]);
+	}
+
+	void FirstApp::freeCommandBuffers() {
+		vkFreeCommandBuffers(GameEngineDevice.device(), GameEngineDevice.getCommandPool(),
+		                     static_cast<uint32_t>(commandBuffers.size()),
+		                     commandBuffers.data());
+		commandBuffers.clear();
+	}
+
+	void FirstApp::registerModels(GameEngine::LveModel& model, int imageIndex) {
+       model.bind(commandBuffers[imageIndex]);
+       model.draw(commandBuffers[imageIndex]);
     }
 
 	void FirstApp::recordCommandBuffer(int imageIndex) {
+		static int frame = 30;
+		frame = (frame + 1) % 100;
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
-			throw std::runtime_error("failed to begin recording command buffer!");
+		if (bool result = vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
+			throw result;
 		}
+
+
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -136,7 +159,7 @@ namespace GameEngine {
 		renderPassInfo.renderArea.extent = gameEngineSwapChain->getSwapChainExtent();
 
 		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clearValues[0].color = {0.01f, 0.01f, 0.01f, 1.0f};
 		clearValues[1].depthStencil = { 1.0f, 0 };
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		renderPassInfo.pClearValues = clearValues.data();
@@ -156,15 +179,28 @@ namespace GameEngine {
 
 		gameEnginePipeline->bind(commandBuffers[imageIndex]);
 		gameEngineModel->bind(commandBuffers[imageIndex]);
-		gameEngineModel->draw(commandBuffers[imageIndex]);
 
-		registerModels(gameEngineModel, imageIndex);
+		for (int j = 0; j < 4; j++) {
+			SimplePushConstantData push{};
+			push.offset = {0.0f, -0.4f + static_cast<float>(j) * 0.25f};
+			push.color = {0.0, 0.0, 0.2f + 0.2f * static_cast<float>(j)};
 
+			vkCmdPushConstants(
+				commandBuffers[imageIndex],
+				pipelineLayout,
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				sizeof(SimplePushConstantData),
+				&push);
+			gameEngineModel->draw(commandBuffers[imageIndex]);
+		}
 
 		vkCmdEndRenderPass(commandBuffers[imageIndex]);
-		if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to record command buffer!");
+
+		if (bool result = vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
+			throw result;
 		}
+
 	}
 
 	void FirstApp::drawFrame() {
@@ -177,7 +213,7 @@ namespace GameEngine {
 		}
 
 		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-			throw std::runtime_error("failed to acquire swap chain image!");
+			throw result;
 		}
 
 		recordCommandBuffer(imageIndex);
@@ -189,7 +225,7 @@ namespace GameEngine {
 		}
 
 		if (result != VK_SUCCESS) {
-			throw std::runtime_error("failed to present swap chain image!");
+			throw result;
 		}
 	
 	}

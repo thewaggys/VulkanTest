@@ -28,8 +28,8 @@ namespace GameEngine {
 		void createPipelineLayout();
 		void createPipeline();
 		void createCommandBuffers();
-
-		void registerModels(std::unique_ptr<LveModel> &model, int imageIndex);
+		void freeCommandBuffers();
+		void registerModels(GameEngine::LveModel &model, int imageIndex);
 
 		void drawFrame();
 		void recreateSwapChain();

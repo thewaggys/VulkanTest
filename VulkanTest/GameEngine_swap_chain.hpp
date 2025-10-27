@@ -57,10 +57,10 @@ class GameEngineSwapChain {
       VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
 
       VkFormat swapChainImageFormat;
-      VkExtent2D swapChainExtent;
+      VkExtent2D swapChainExtent{};
 
       std::vector<VkFramebuffer> swapChainFramebuffers;
-      VkRenderPass renderPass;
+      VkRenderPass renderPass{};
 
       std::vector<VkImage> depthImages;
       std::vector<VkDeviceMemory> depthImageMemorys;
@@ -71,7 +71,7 @@ class GameEngineSwapChain {
     RenderDevice &device;
     VkExtent2D windowExtent;
 
-    VkSwapchainKHR swapChain;
+    VkSwapchainKHR swapChain{};
     std::shared_ptr<GameEngineSwapChain> oldSwapChain;
 
       std::vector<VkSemaphore> imageAvailableSemaphores;
