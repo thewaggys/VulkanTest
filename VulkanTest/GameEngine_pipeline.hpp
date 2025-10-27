@@ -49,7 +49,7 @@ struct PipelineConfigInfo {
 
 		);
 
-		void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
+		void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) const;
 
 		RenderDevice& LveDevice;
 		VkPipeline graphicsPipeline;

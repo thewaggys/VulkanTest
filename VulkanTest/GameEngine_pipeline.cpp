@@ -114,7 +114,7 @@ namespace GameEngine {
 
 	}
 
-	void LvePipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) {
+	void LvePipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) const {
 		VkShaderModuleCreateInfo createInfo{};
 
 
