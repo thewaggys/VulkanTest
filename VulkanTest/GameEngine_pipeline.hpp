@@ -36,8 +36,8 @@ struct PipelineConfigInfo {
 		LvePipeline(const LvePipeline&) = delete;
 		LvePipeline& operator=(const LvePipeline&) = delete;
 
-		void bind(VkCommandBuffer commandBuffer);
-		static PipelineConfigInfo defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
+		void bind(VkCommandBuffer commandBuffer) const;
+		static void defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
 
 	private:
 		static std::vector<char> readFile(const std::string& filepath);

@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <iostream> 
 #include <cassert>
+#include <cstring>
 #include <vulkan/vulkan_core.h>
 
 namespace GameEngine {
@@ -28,10 +29,10 @@ namespace GameEngine {
 		std::ifstream file{ filepath, std::ios::ate | std::ios::binary };
 
 		if (!file.is_open()) {
-			throw std::runtime_error("failed to open file: " + filepath);
+			throw file.exceptions();
 		}
 
-		size_t fileSize = static_cast<size_t>(file.tellg());
+		auto fileSize = static_cast<size_t>(file.tellg());
 		std::vector<char> buffer(fileSize);
 		
 		file.seekg(0);
@@ -59,7 +60,7 @@ namespace GameEngine {
 		createShaderModule(vertCode, &vertShaderModule);
 		createShaderModule(fragCode, &fragShaderModule);
 
-		VkPipelineShaderStageCreateInfo shaderStages[2];
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages(2);
 		//Vert shader
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -89,7 +90,7 @@ namespace GameEngine {
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = shaderStages;
+		pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
 		pipelineInfo.pViewportState = &configInfo.viewportInfo;
@@ -106,33 +107,39 @@ namespace GameEngine {
 		pipelineInfo.basePipelineIndex = -1;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-
-		if (vkCreateGraphicsPipelines(LveDevice.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create a graphics pipeline");
+		VkResult result = vkCreateGraphicsPipelines(LveDevice.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline);
+		if (result != VK_SUCCESS) {
+			throw result;
 		}
 
 	}
 
 	void LvePipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) {
 		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = code.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
-		if (vkCreateShaderModule(LveDevice.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS)
-			throw std::runtime_error("failed to create shader module");
+
+		std::vector<uint32_t> codeAligned(code.size());
+		std::memcpy(codeAligned.data(), code.data(), code.size());
+
+		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		createInfo.codeSize = codeAligned.size();
+		createInfo.pCode = codeAligned.data();
+
+		VkResult result = vkCreateShaderModule(LveDevice.device(), &createInfo, nullptr, shaderModule);
+		if (result != VK_SUCCESS) {
+			throw result;
+		}
 	}
 
-	void LvePipeline::bind(VkCommandBuffer commandBuffer) {
+	void LvePipeline::bind(const VkCommandBuffer commandBuffer) const {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 	}
 
-	PipelineConfigInfo LvePipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo) {
+	void LvePipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo) {
 		configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 		configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		configInfo.inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
 
-		VkPipelineViewportStateCreateInfo viewportInfo{};
 		configInfo.viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 		configInfo.viewportInfo.viewportCount = 1;
 		configInfo.viewportInfo.pViewports = nullptr;
@@ -191,7 +198,6 @@ namespace GameEngine {
 		configInfo.depthStencilInfo.front = {};  // Optional
 		configInfo.depthStencilInfo.back = {};   // Optional
 
-
 		configInfo.dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 		configInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 		configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStateEnables.data();
@@ -199,7 +205,6 @@ namespace GameEngine {
 			static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
 		configInfo.dynamicStateInfo.flags = 0;
 
-		return configInfo;
 	}
 
 }

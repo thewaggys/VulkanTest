@@ -45,10 +45,6 @@ namespace GameEngine {
 			{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
 		};
 
-		for (const auto& vertex : vertices) {
-			std::cout << "Color: " << vertex.color.x << ", " << vertex.color.y << ", " << vertex.color.z << std::endl;
-		}
-
 		gameEngineModel = std::make_unique<LveModel>(GameEngineDevice, vertices);
 	}
 
@@ -66,9 +62,8 @@ namespace GameEngine {
 		pipelineLayoutInfo.pSetLayouts = nullptr;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-		if (bool result = vkCreatePipelineLayout(GameEngineDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
-			VK_SUCCESS
-			) {
+		VkResult result = vkCreatePipelineLayout(GameEngineDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout);
+		if (result != VK_SUCCESS) {
 			throw result;
 		}
 	}
@@ -120,7 +115,8 @@ namespace GameEngine {
 		allocInfo.commandPool = GameEngineDevice.getCommandPool();
 		allocInfo.commandBufferCount = static_cast<uint32_t> (commandBuffers.size());
 
-		if (bool result = vkAllocateCommandBuffers(GameEngineDevice.device(), &allocInfo, commandBuffers.data())!= VK_SUCCESS) {
+		VkResult result = vkAllocateCommandBuffers(GameEngineDevice.device(), &allocInfo, commandBuffers.data());
+		if (result != VK_SUCCESS) {
 			throw result;
 		}
 
@@ -144,7 +140,8 @@ namespace GameEngine {
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		if (bool result = vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
+		VkResult result = vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo);
+		if (result != VK_SUCCESS) {
 			throw result;
 		}
 
@@ -197,7 +194,8 @@ namespace GameEngine {
 
 		vkCmdEndRenderPass(commandBuffers[imageIndex]);
 
-		if (bool result = vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
+		result = vkEndCommandBuffer(commandBuffers[imageIndex]);
+		if (result != VK_SUCCESS) {
 			throw result;
 		}
 
