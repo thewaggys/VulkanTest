@@ -11,7 +11,9 @@ namespace GameEngine {
 	class LveWindow {
 
 	public:
-		LveWindow(int w, int h, std::string name);
+
+		LveWindow(int w, int h, std::string const &name);
+
 		~LveWindow();
 
 		LveWindow(const LveWindow &) = delete;
