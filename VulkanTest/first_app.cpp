@@ -6,7 +6,6 @@
 #include <glm/glm.hpp>
 #include <stdexcept>
 #include <array>
-#include <iostream>
 #include <fstream>
 #include <GLFW/glfw3.h>
 
