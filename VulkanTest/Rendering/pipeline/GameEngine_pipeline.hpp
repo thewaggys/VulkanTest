@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GameEngine_device.hpp"
+#include "../device/GameEngine_device.hpp"
 
 #include <string>
 #include <vector>
@@ -26,7 +26,7 @@ struct PipelineConfigInfo {
 	class LvePipeline {
 	public:
 		LvePipeline(
-			RenderDevice& device,
+			GeDevice& device,
 			const std::string& vertFilepath,
 			const std::string& fragFilepath,
 			const PipelineConfigInfo& configInfo
@@ -38,6 +38,7 @@ struct PipelineConfigInfo {
 
 		void bind(VkCommandBuffer commandBuffer);
 		static void defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
+
 
 	private:
 		static std::vector<char> readFile(const std::string& filepath);
@@ -51,7 +52,7 @@ struct PipelineConfigInfo {
 
 		void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
 
-		RenderDevice& LveDevice;
+		GeDevice& LveDevice;
 		VkPipeline graphicsPipeline;
 		VkShaderModule vertShaderModule;
 		VkShaderModule fragShaderModule;

@@ -1,10 +1,9 @@
 #pragma once
 
-#include "GameEngine_window.hpp"
-#include "GameEngine_pipeline.hpp"
-#include "GameEngine_swap_chain.hpp"
-#include "GameEngine_device.hpp"
-#include "GameEngine_model.hpp"
+#include "Rendering/device/window/GameEngine_window.hpp"
+#include "Rendering/device/GameEngine_device.hpp"
+#include "Rendering/gameObject/ge_gameObject.hpp"
+#include "Rendering/ge_renderer.hpp"
 
 #include <memory>
 #include <vector>
@@ -24,23 +23,11 @@ namespace GameEngine {
 
 		void run();
 	private:
-		void loadModels();
-		void createPipelineLayout();
-		void createPipeline();
-		void createCommandBuffers();
-		void freeCommandBuffers();
-		void registerModels(GameEngine::LveModel &model, int imageIndex);
+		void loadGameObjects();
 
-		void drawFrame();
-		void recreateSwapChain();
-		void recordCommandBuffer(int imageIndex);
-
-		LveWindow LveWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
-		RenderDevice GameEngineDevice{LveWindow};
-		std::unique_ptr<GameEngineSwapChain> gameEngineSwapChain;
-		std::unique_ptr<LvePipeline> gameEnginePipeline;
-		VkPipelineLayout pipelineLayout;
-		std::vector<VkCommandBuffer> commandBuffers;
-		std::unique_ptr<LveModel> gameEngineModel;
+		LveWindow geWindow{WIDTH, HEIGHT, "this my window yo"};
+		GeDevice geDevice{geWindow};
+		GeRenderer geRenderer{geWindow, geDevice};
+		std::vector<GeGameObject> gameObjects;
 	};
 }

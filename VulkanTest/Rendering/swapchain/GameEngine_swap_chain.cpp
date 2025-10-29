@@ -1,4 +1,4 @@
-#include "GameEngine_swap_chain.hpp"
+#include "Rendering/swapchain/GameEngine_swap_chain.hpp"
 
 // std
 #include <array>
@@ -6,16 +6,16 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
-#include <set>
 #include <stdexcept>
+#include <glm/detail/func_geometric.inl>
 
 namespace GameEngine {
 
-GameEngineSwapChain::GameEngineSwapChain(RenderDevice &deviceRef, VkExtent2D extent)
+GameEngineSwapChain::GameEngineSwapChain(GeDevice &deviceRef, VkExtent2D extent)
     : device{deviceRef}, windowExtent{extent} {
   init();
 }
-GameEngineSwapChain::GameEngineSwapChain(RenderDevice &deviceRef, VkExtent2D extent, std::shared_ptr<GameEngineSwapChain> previous)
+GameEngineSwapChain::GameEngineSwapChain(GeDevice &deviceRef, VkExtent2D extent, std::shared_ptr<GameEngineSwapChain> previous)
     : device{deviceRef}, windowExtent{extent}, oldSwapChain{previous} {
   init();
   oldSwapChain = nullptr;
@@ -33,6 +33,7 @@ GameEngineSwapChain::GameEngineSwapChain(RenderDevice &deviceRef, VkExtent2D ext
 
 GameEngineSwapChain::~GameEngineSwapChain() {
   for (auto imageView : swapChainImageViews) {
+    vkDeviceWaitIdle(device.device());
     vkDestroyImageView(device.device(), imageView, nullptr);
   }
   swapChainImageViews.clear();
@@ -62,7 +63,7 @@ GameEngineSwapChain::~GameEngineSwapChain() {
   }
 }
 
-VkResult GameEngineSwapChain::acquireNextImage(uint32_t *imageIndex) {
+VkResult GameEngineSwapChain::acquireNextImage(uint32_t *imageIndex) const {
   vkWaitForFences(
       device.device(),
       1,
@@ -82,7 +83,7 @@ VkResult GameEngineSwapChain::acquireNextImage(uint32_t *imageIndex) {
 }
 
 VkResult GameEngineSwapChain::submitCommandBuffers(
-    const VkCommandBuffer *buffers, uint32_t *imageIndex) {
+    const VkCommandBuffer *buffers, const uint32_t *imageIndex) {
   if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
     vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
   }
@@ -91,18 +92,18 @@ VkResult GameEngineSwapChain::submitCommandBuffers(
   VkSubmitInfo submitInfo = {};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-  VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
-  VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+  std::array<VkSemaphore, 8> waitSemaphores = {imageAvailableSemaphores[currentFrame]};
+  std::array<VkPipelineStageFlags, 4> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
   submitInfo.waitSemaphoreCount = 1;
-  submitInfo.pWaitSemaphores = waitSemaphores;
-  submitInfo.pWaitDstStageMask = waitStages;
+  submitInfo.pWaitSemaphores = waitSemaphores.data();
+  submitInfo.pWaitDstStageMask = waitStages.data();
 
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = buffers;
 
-  VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
+  std::array<VkSemaphore, 8> signalSemaphores = {renderFinishedSemaphores[currentFrame]};
   submitInfo.signalSemaphoreCount = 1;
-  submitInfo.pSignalSemaphores = signalSemaphores;
+  submitInfo.pSignalSemaphores = signalSemaphores.data();
 
   vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
   if (vkQueueSubmit(device.graphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) !=
@@ -114,11 +115,11 @@ VkResult GameEngineSwapChain::submitCommandBuffers(
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
   presentInfo.waitSemaphoreCount = 1;
-  presentInfo.pWaitSemaphores = signalSemaphores;
+  presentInfo.pWaitSemaphores = signalSemaphores.data();
 
-  VkSwapchainKHR swapChains[] = {swapChain};
+  std::vector<VkSwapchainKHR> swapChains = {swapChain};
   presentInfo.swapchainCount = 1;
-  presentInfo.pSwapchains = swapChains;
+  presentInfo.pSwapchains = swapChains.data();
 
   presentInfo.pImageIndices = imageIndex;
 
@@ -154,12 +155,12 @@ void GameEngineSwapChain::createSwapChain() {
   createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
   QueueFamilyIndices indices = device.findPhysicalQueueFamilies();
-  uint32_t queueFamilyIndices[] = {indices.graphicsFamily, indices.presentFamily};
+  std::array<uint32_t, 8> queueFamilyIndices = {indices.graphicsFamily, indices.presentFamily};
 
   if (indices.graphicsFamily != indices.presentFamily) {
     createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
     createInfo.queueFamilyIndexCount = 2;
-    createInfo.pQueueFamilyIndices = queueFamilyIndices;
+    createInfo.pQueueFamilyIndices = queueFamilyIndices.data();
   } else {
     createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     createInfo.queueFamilyIndexCount = 0;      // Optional
@@ -277,14 +278,14 @@ void GameEngineSwapChain::createFramebuffers() {
   for (size_t i = 0; i < imageCount(); i++) {
     std::array<VkImageView, 2> attachments = {swapChainImageViews[i], depthImageViews[i]};
 
-    VkExtent2D swapChainExtent = getSwapChainExtent();
+    VkExtent2D swapChainSize = getSwapChainExtent();
     VkFramebufferCreateInfo framebufferInfo = {};
     framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebufferInfo.renderPass = renderPass;
     framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
     framebufferInfo.pAttachments = attachments.data();
-    framebufferInfo.width = swapChainExtent.width;
-    framebufferInfo.height = swapChainExtent.height;
+    framebufferInfo.width = swapChainSize.width;
+    framebufferInfo.height = swapChainSize.height;
     framebufferInfo.layers = 1;
 
     if (vkCreateFramebuffer(
@@ -299,7 +300,8 @@ void GameEngineSwapChain::createFramebuffers() {
 
 void GameEngineSwapChain::createDepthResources() {
   VkFormat depthFormat = findDepthFormat();
-  VkExtent2D swapChainExtent = getSwapChainExtent();
+  swapChainDepthFormat = depthFormat;
+  VkExtent2D swapChainSize = getSwapChainExtent();
 
   depthImages.resize(imageCount());
   depthImageMemorys.resize(imageCount());
@@ -309,8 +311,8 @@ void GameEngineSwapChain::createDepthResources() {
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = swapChainExtent.width;
-    imageInfo.extent.height = swapChainExtent.height;
+    imageInfo.extent.width = swapChainSize.width;
+    imageInfo.extent.height = swapChainSize.height;
     imageInfo.extent.depth = 1;
     imageInfo.mipLevels = 1;
     imageInfo.arrayLayers = 1;
@@ -370,7 +372,7 @@ void GameEngineSwapChain::createSyncObjects() {
 }
 
 VkSurfaceFormatKHR GameEngineSwapChain::chooseSwapSurfaceFormat(
-    const std::vector<VkSurfaceFormatKHR> &availableFormats) {
+    const std::vector<VkSurfaceFormatKHR> &availableFormats) const {
   for (const auto &availableFormat : availableFormats) {
     if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
         availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -382,7 +384,7 @@ VkSurfaceFormatKHR GameEngineSwapChain::chooseSwapSurfaceFormat(
 }
 
 VkPresentModeKHR GameEngineSwapChain::chooseSwapPresentMode(
-    const std::vector<VkPresentModeKHR> &availablePresentModes) {
+    const std::vector<VkPresentModeKHR> &availablePresentModes) const {
 
     for (const auto& availablePresentMode : availablePresentModes) {
         if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
@@ -402,7 +404,7 @@ VkPresentModeKHR GameEngineSwapChain::chooseSwapPresentMode(
   return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D GameEngineSwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) {
+VkExtent2D GameEngineSwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) const {
   if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
     return capabilities.currentExtent;
   } else {

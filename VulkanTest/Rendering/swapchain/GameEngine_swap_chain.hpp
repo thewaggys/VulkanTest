@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GameEngine_device.hpp"
+#include "Rendering/device/GameEngine_device.hpp"
 
 // vulkan headers
 #include <vulkan/vulkan.h>
@@ -16,8 +16,8 @@ class GameEngineSwapChain {
  public:
   static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
-  GameEngineSwapChain(RenderDevice &deviceRef, VkExtent2D windowExtent);
-  GameEngineSwapChain(RenderDevice &deviceRef, VkExtent2D windowExtent, std::shared_ptr<GameEngineSwapChain> previous);
+  GameEngineSwapChain(GeDevice &deviceRef, VkExtent2D windowExtent);
+  GameEngineSwapChain(GeDevice &deviceRef, VkExtent2D windowExtent, std::shared_ptr<GameEngineSwapChain> previous);
   ~GameEngineSwapChain();
 
   GameEngineSwapChain(const GameEngineSwapChain &) = delete;
@@ -26,19 +26,24 @@ class GameEngineSwapChain {
   VkFramebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
   VkRenderPass getRenderPass() { return renderPass; }
   VkImageView getImageView(int index) { return swapChainImageViews[index]; }
-  size_t imageCount() { return swapChainImages.size(); }
-  VkFormat getSwapChainImageFormat() { return swapChainImageFormat; }
-  VkExtent2D getSwapChainExtent() { return swapChainExtent; }
-  uint32_t width() { return swapChainExtent.width; }
-  uint32_t height() { return swapChainExtent.height; }
+  size_t imageCount() const { return swapChainImages.size(); }
+  VkFormat getSwapChainImageFormat() const { return swapChainImageFormat; }
+  VkExtent2D getSwapChainExtent() const { return swapChainExtent; }
+  uint32_t width() const { return swapChainExtent.width; }
+  uint32_t height() const { return swapChainExtent.height; }
 
-  float extentAspectRatio() {
+  float extentAspectRatio() const{
     return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height);
   }
   VkFormat findDepthFormat();
 
-  VkResult acquireNextImage(uint32_t *imageIndex);
-  VkResult submitCommandBuffers(const VkCommandBuffer *buffers, uint32_t *imageIndex);
+  VkResult acquireNextImage(uint32_t *imageIndex) const;
+  VkResult submitCommandBuffers(const VkCommandBuffer *buffers, const uint32_t *imageIndex);
+
+    auto compareSwapFormats(const GameEngineSwapChain& swapChainInfo) const -> bool {
+        return swapChainInfo.swapChainDepthFormat == swapChainDepthFormat && swapChainInfo.swapChainImageFormat ==
+               swapChainImageFormat;
+    }
 
  private:
         void init();
@@ -51,12 +56,13 @@ class GameEngineSwapChain {
 
       // Helper functions
       VkSurfaceFormatKHR chooseSwapSurfaceFormat(
-          const std::vector<VkSurfaceFormatKHR> &availableFormats);
+          const std::vector<VkSurfaceFormatKHR> &availableFormats) const;
       VkPresentModeKHR chooseSwapPresentMode(
-          const std::vector<VkPresentModeKHR> &availablePresentModes);
-      VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
+          const std::vector<VkPresentModeKHR> &availablePresentModes) const;
+      VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) const;
 
       VkFormat swapChainImageFormat;
+      VkFormat swapChainDepthFormat;
       VkExtent2D swapChainExtent{};
 
       std::vector<VkFramebuffer> swapChainFramebuffers;
@@ -68,7 +74,7 @@ class GameEngineSwapChain {
       std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
 
-    RenderDevice &device;
+    GeDevice &device;
     VkExtent2D windowExtent;
 
     VkSwapchainKHR swapChain{};

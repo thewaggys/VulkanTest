@@ -1,19 +1,26 @@
-#include "GameEngine_device.hpp"
+#include "Rendering/device/GameEngine_device.hpp"
 
 // std headers
+#include "GameEngine_device.hpp"
+
 #include <cstring>
 #include <iostream>
 #include <set>
 #include <unordered_set>
+#include <vulkan/vulkan_core.h>
+
+#include "Rendering/pipeline/GameEngine_pipeline.hpp"
+#include "Rendering/Shaders/simple_render_system.hpp"
+#include "window/GameEngine_window.hpp"
 
 namespace GameEngine {
 
 // local callback functions
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity /* NOSONAR */,
+    VkDebugUtilsMessageTypeFlagsEXT messageType /* NOSONAR */,
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-    void *pUserData) {
+    void *pUserData /* NOSONAR */) {
   std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
   return VK_FALSE;
@@ -47,7 +54,7 @@ void DestroyDebugUtilsMessengerEXT(
 }
 
 // class member functions
-RenderDevice::RenderDevice(LveWindow &window) : window{window} {
+GeDevice::GeDevice(LveWindow &window) : window{window} {
   createInstance();
   setupDebugMessenger();
   createSurface();
@@ -56,7 +63,8 @@ RenderDevice::RenderDevice(LveWindow &window) : window{window} {
   createCommandPool();
 }
 
-RenderDevice::~RenderDevice() {
+GeDevice::~GeDevice() {
+  vkDeviceWaitIdle(device_);
   vkDestroyCommandPool(device_, commandPool, nullptr);
   vkDestroyDevice(device_, nullptr);
 
@@ -68,7 +76,7 @@ RenderDevice::~RenderDevice() {
   vkDestroyInstance(instance, nullptr);
 }
 
-void RenderDevice::createInstance() {
+void GeDevice::createInstance() {
   if (enableValidationLayers && !checkValidationLayerSupport()) {
     throw std::runtime_error("validation layers requested, but not available!");
   }
@@ -95,24 +103,25 @@ void RenderDevice::createInstance() {
     createInfo.ppEnabledLayerNames = validationLayers.data();
 
     populateDebugMessengerCreateInfo(debugCreateInfo);
-    createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
+    createInfo.pNext = &debugCreateInfo;
   } else {
     createInfo.enabledLayerCount = 0;
     createInfo.pNext = nullptr;
   }
 
-  if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create instance!");
+  VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
+  if (result != VK_SUCCESS) {
+    throw result;
   }
 
   hasGflwRequiredInstanceExtensions();
 }
 
-void RenderDevice::pickPhysicalDevice() {
+void GeDevice::pickPhysicalDevice() {
   uint32_t deviceCount = 0;
-  vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-  if (deviceCount == 0) {
-    throw std::runtime_error("failed to find GPUs with Vulkan support!");
+  VkResult result = vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+  if (result != VK_SUCCESS) {
+    throw result;
   }
   std::cout << "Device count: " << deviceCount << std::endl;
   std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -126,14 +135,14 @@ void RenderDevice::pickPhysicalDevice() {
   }
 
   if (physicalDevice == VK_NULL_HANDLE) {
-    throw std::runtime_error("failed to find a suitable GPU!");
+    throw VK_OBJECT_TYPE_PHYSICAL_DEVICE;
   }
 
   vkGetPhysicalDeviceProperties(physicalDevice, &properties);
   std::cout << "physical device: " << properties.deviceName << std::endl;
 }
 
-void RenderDevice::createLogicalDevice() {
+void GeDevice::createLogicalDevice() {
   QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -170,16 +179,16 @@ void RenderDevice::createLogicalDevice() {
   } else {
     createInfo.enabledLayerCount = 0;
   }
-
-  if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create logical device!");
+VkResult result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device_);
+  if (result != VK_SUCCESS) {
+    throw result;
   }
 
   vkGetDeviceQueue(device_, indices.graphicsFamily, 0, &graphicsQueue_);
   vkGetDeviceQueue(device_, indices.presentFamily, 0, &presentQueue_);
 }
 
-void RenderDevice::createCommandPool() {
+void GeDevice::createCommandPool() {
   QueueFamilyIndices queueFamilyIndices = findPhysicalQueueFamilies();
 
   VkCommandPoolCreateInfo poolInfo = {};
@@ -187,15 +196,15 @@ void RenderDevice::createCommandPool() {
   poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
   poolInfo.flags =
       VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-  if (vkCreateCommandPool(device_, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create command pool!");
+VkResult result = vkCreateCommandPool(device_, &poolInfo, nullptr, &commandPool);
+  if (result != VK_SUCCESS) {
+    throw result;
   }
 }
 
-void RenderDevice::createSurface() { window.createWindowSurface(instance, &surface_); }
+void GeDevice::createSurface() { window.createWindowSurface(instance, &surface_); }
 
-bool RenderDevice::isDeviceSuitable(VkPhysicalDevice device) {
+bool GeDevice::isDeviceSuitable(VkPhysicalDevice device) {
   QueueFamilyIndices indices = findQueueFamilies(device);
 
   bool extensionsSupported = checkDeviceExtensionSupport(device);
@@ -213,8 +222,8 @@ bool RenderDevice::isDeviceSuitable(VkPhysicalDevice device) {
          supportedFeatures.samplerAnisotropy;
 }
 
-void RenderDevice::populateDebugMessengerCreateInfo(
-    VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
+void GeDevice::populateDebugMessengerCreateInfo(
+    VkDebugUtilsMessengerCreateInfoEXT &createInfo) const {
   createInfo = {};
   createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
   createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
@@ -226,16 +235,17 @@ void RenderDevice::populateDebugMessengerCreateInfo(
   createInfo.pUserData = nullptr;  // Optional
 }
 
-void RenderDevice::setupDebugMessenger() {
+void GeDevice::setupDebugMessenger() {
   if (!enableValidationLayers) return;
   VkDebugUtilsMessengerCreateInfoEXT createInfo;
   populateDebugMessengerCreateInfo(createInfo);
-  if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
-    throw std::runtime_error("failed to set up debug messenger!");
+  VkResult result = CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger);
+  if (result != VK_SUCCESS) {
+    throw result;
   }
 }
 
-bool RenderDevice::checkValidationLayerSupport() {
+bool GeDevice::checkValidationLayerSupport() const {
   uint32_t layerCount;
   vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -260,7 +270,7 @@ bool RenderDevice::checkValidationLayerSupport() {
   return true;
 }
 
-std::vector<const char *> RenderDevice::getRequiredExtensions() {
+std::vector<const char *> GeDevice::getRequiredExtensions() const {
   uint32_t glfwExtensionCount = 0;
   const char **glfwExtensions;
   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -274,7 +284,7 @@ std::vector<const char *> RenderDevice::getRequiredExtensions() {
   return extensions;
 }
 
-void RenderDevice::hasGflwRequiredInstanceExtensions() {
+void GeDevice::hasGflwRequiredInstanceExtensions() const{
   uint32_t extensionCount = 0;
   vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
   std::vector<VkExtensionProperties> extensions(extensionCount);
@@ -284,7 +294,7 @@ void RenderDevice::hasGflwRequiredInstanceExtensions() {
   std::unordered_set<std::string> available;
   for (const auto &extension : extensions) {
     std::cout << "\t" << extension.extensionName << std::endl;
-    available.insert(extension.extensionName);
+    available.emplace(extension.extensionName);
   }
 
   std::cout << "required extensions:" << std::endl;
@@ -297,7 +307,7 @@ void RenderDevice::hasGflwRequiredInstanceExtensions() {
   }
 }
 
-bool RenderDevice::checkDeviceExtensionSupport(VkPhysicalDevice device) {
+bool GeDevice::checkDeviceExtensionSupport(VkPhysicalDevice device) const {
   uint32_t extensionCount;
   vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
@@ -308,7 +318,7 @@ bool RenderDevice::checkDeviceExtensionSupport(VkPhysicalDevice device) {
       &extensionCount,
       availableExtensions.data());
 
-  std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+  std::set<std::string, std::less<>> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
   for (const auto &extension : availableExtensions) {
     requiredExtensions.erase(extension.extensionName);
@@ -317,7 +327,7 @@ bool RenderDevice::checkDeviceExtensionSupport(VkPhysicalDevice device) {
   return requiredExtensions.empty();
 }
 
-QueueFamilyIndices RenderDevice::findQueueFamilies(VkPhysicalDevice device) {
+QueueFamilyIndices GeDevice::findQueueFamilies(VkPhysicalDevice device) {
   QueueFamilyIndices indices;
 
   uint32_t queueFamilyCount = 0;
@@ -348,7 +358,7 @@ QueueFamilyIndices RenderDevice::findQueueFamilies(VkPhysicalDevice device) {
   return indices;
 }
 
-SwapChainSupportDetails RenderDevice::querySwapChainSupport(VkPhysicalDevice device) {
+SwapChainSupportDetails GeDevice::querySwapChainSupport(VkPhysicalDevice device) {
   SwapChainSupportDetails details;
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface_, &details.capabilities);
 
@@ -374,7 +384,7 @@ SwapChainSupportDetails RenderDevice::querySwapChainSupport(VkPhysicalDevice dev
   return details;
 }
 
-VkFormat RenderDevice::findSupportedFormat(
+VkFormat GeDevice::findSupportedFormat(
     const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
   for (VkFormat format : candidates) {
     VkFormatProperties props;
@@ -390,12 +400,12 @@ VkFormat RenderDevice::findSupportedFormat(
   throw std::runtime_error("failed to find supported format!");
 }
 
-uint32_t RenderDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+uint32_t GeDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags) {
   VkPhysicalDeviceMemoryProperties memProperties;
   vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
   for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
     if ((typeFilter & (1 << i)) &&
-        (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+        (memProperties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags) {
       return i;
     }
   }
@@ -403,10 +413,10 @@ uint32_t RenderDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags
   throw std::runtime_error("failed to find suitable memory type!");
 }
 
-void RenderDevice::createBuffer(
-    VkDeviceSize size,
-    VkBufferUsageFlags usage,
-    VkMemoryPropertyFlags properties,
+void GeDevice::createBuffer(
+    const VkDeviceSize size,
+    const VkBufferUsageFlags usage,
+    const VkMemoryPropertyFlags &propertyFlags,
     VkBuffer &buffer,
     VkDeviceMemory &bufferMemory) {
   VkBufferCreateInfo bufferInfo{};
@@ -425,7 +435,7 @@ void RenderDevice::createBuffer(
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+  allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, propertyFlags);
 
   if (vkAllocateMemory(device_, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate vertex buffer memory!");
@@ -434,7 +444,7 @@ void RenderDevice::createBuffer(
   vkBindBufferMemory(device_, buffer, bufferMemory, 0);
 }
 
-VkCommandBuffer RenderDevice::beginSingleTimeCommands() {
+VkCommandBuffer GeDevice::beginSingleTimeCommands() {
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -452,7 +462,7 @@ VkCommandBuffer RenderDevice::beginSingleTimeCommands() {
   return commandBuffer;
 }
 
-void RenderDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
+void GeDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
   vkEndCommandBuffer(commandBuffer);
 
   VkSubmitInfo submitInfo{};
@@ -466,7 +476,7 @@ void RenderDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
   vkFreeCommandBuffers(device_, commandPool, 1, &commandBuffer);
 }
 
-void RenderDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+void GeDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
   VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
   VkBufferCopy copyRegion{};
@@ -478,7 +488,7 @@ void RenderDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSi
   endSingleTimeCommands(commandBuffer);
 }
 
-void RenderDevice::copyBufferToImage(
+void GeDevice::copyBufferToImage(
     VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount) {
   VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
@@ -505,9 +515,9 @@ void RenderDevice::copyBufferToImage(
   endSingleTimeCommands(commandBuffer);
 }
 
-void RenderDevice::createImageWithInfo(
+void GeDevice::createImageWithInfo(
     const VkImageCreateInfo &imageInfo,
-    VkMemoryPropertyFlags properties,
+    VkMemoryPropertyFlags propertyFlags,
     VkImage &image,
     VkDeviceMemory &imageMemory) {
   if (vkCreateImage(device_, &imageInfo, nullptr, &image) != VK_SUCCESS) {
@@ -520,7 +530,7 @@ void RenderDevice::createImageWithInfo(
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+  allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, propertyFlags);
 
   if (vkAllocateMemory(device_, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate image memory!");
