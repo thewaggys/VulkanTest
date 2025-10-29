@@ -1,5 +1,5 @@
 #include "GameEngine_pipeline.hpp"
-#include "GameEngine_model.hpp"
+#include "Rendering/pipeline/model/GameEngine_model.hpp"
 
 #include <fstream>
 #include <stdexcept>
@@ -9,7 +9,7 @@
 
 namespace GameEngine {
 	LvePipeline::LvePipeline(
-		RenderDevice& device,
+		GeDevice& device,
 		const std::string& vertFilepath,
 		const std::string& fragFilepath,
 		const PipelineConfigInfo& configInfo)

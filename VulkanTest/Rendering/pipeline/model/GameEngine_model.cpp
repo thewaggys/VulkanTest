@@ -2,10 +2,11 @@
 
 #include <cassert>
 #include <cstring>
+#include <array>
 
 namespace GameEngine {
 
-	LveModel::LveModel(RenderDevice& device, const std::vector<Vertex>& vertices) : lveDevice{ device } {
+	LveModel::LveModel(GeDevice& device, const std::vector<Vertex>& vertices) : lveDevice{ device } {
 		createVertexBuffers(vertices);
 	}
 	LveModel::~LveModel() {
@@ -27,20 +28,18 @@ namespace GameEngine {
 		);
 	void* data;
 	vkMapMemory(lveDevice.device(), vertexBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
+	memcpy(data, vertices.data(), bufferSize);
 	vkUnmapMemory(lveDevice.device(), vertexBufferMemory);
 	}
 
-	void LveModel::draw(VkCommandBuffer commandbuffer)
-	{
+	void LveModel::draw(VkCommandBuffer commandbuffer)	const {
 		vkCmdDraw(commandbuffer, vertexCount, 1, 0, 0);
 	}
 
-	void LveModel::bind(VkCommandBuffer commandbuffer)
-	{
-		VkBuffer buffers[] = { vertexBuffer };
-		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(commandbuffer, 0, 1, buffers, offsets);
+	void LveModel::bind(VkCommandBuffer commandbuffer) const {
+		std::vector<VkBuffer> buffers = { vertexBuffer };
+		std::array<VkDeviceSize, 1> offsets = { 0 };
+		vkCmdBindVertexBuffers(commandbuffer, 0, 1, buffers.data(), offsets.data());
 	}
 
 

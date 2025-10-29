@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GameEngine_window.hpp"
+#include "Rendering/device/window/GameEngine_window.hpp"
 
 // std lib headers
 #include <string>
@@ -19,10 +19,10 @@ struct QueueFamilyIndices {
   uint32_t presentFamily;
   bool graphicsFamilyHasValue = false;
   bool presentFamilyHasValue = false;
-  bool isComplete() { return graphicsFamilyHasValue && presentFamilyHasValue; }
+  bool isComplete() const { return graphicsFamilyHasValue && presentFamilyHasValue; }
 };
 
-class RenderDevice {
+class GeDevice {
  public:
 #ifdef NDEBUG
   const bool enableValidationLayers = false;
@@ -30,14 +30,14 @@ class RenderDevice {
   const bool enableValidationLayers = true;
 #endif
 
-  RenderDevice(LveWindow &window);
-  ~RenderDevice();
+  explicit GeDevice(LveWindow &window);
+  ~GeDevice();
 
   // Not copyable or movable
-  RenderDevice(const RenderDevice &) = delete;
-  RenderDevice& operator=(const RenderDevice &) = delete;
-  RenderDevice(RenderDevice &&) = delete;
-  RenderDevice &operator=(RenderDevice &&) = delete;
+  GeDevice(const GeDevice &) = delete;
+  GeDevice& operator=(const GeDevice &) = delete;
+  GeDevice(GeDevice &&) = delete;
+  GeDevice &operator=(GeDevice &&) = delete;
 
   VkCommandPool getCommandPool() { return commandPool; }
   VkDevice device() { return device_; }
@@ -46,7 +46,7 @@ class RenderDevice {
   VkQueue presentQueue() { return presentQueue_; }
 
   SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice); }
-  uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+  uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertieFlags);
   QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice); }
   VkFormat findSupportedFormat(
       const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
@@ -55,7 +55,7 @@ class RenderDevice {
   void createBuffer(
       VkDeviceSize size,
       VkBufferUsageFlags usage,
-      VkMemoryPropertyFlags properties,
+      const VkMemoryPropertyFlags &propertyFlags,
       VkBuffer &buffer,
       VkDeviceMemory &bufferMemory);
   VkCommandBuffer beginSingleTimeCommands();
@@ -66,11 +66,10 @@ class RenderDevice {
 
   void createImageWithInfo(
       const VkImageCreateInfo &imageInfo,
-      VkMemoryPropertyFlags properties,
+      VkMemoryPropertyFlags propertyFlags,
       VkImage &image,
       VkDeviceMemory &imageMemory);
 
-  VkPhysicalDeviceProperties properties;
 
  private:
   void createInstance();
@@ -79,15 +78,16 @@ class RenderDevice {
   void pickPhysicalDevice();
   void createLogicalDevice();
   void createCommandPool();
+  VkPhysicalDeviceProperties properties;
 
   // helper functions
   bool isDeviceSuitable(VkPhysicalDevice device);
-  std::vector<const char *> getRequiredExtensions();
-  bool checkValidationLayerSupport();
+  std::vector<const char *> getRequiredExtensions() const;
+  bool checkValidationLayerSupport() const;
   QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-  void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
-  void hasGflwRequiredInstanceExtensions();
-  bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+  void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) const;
+  void hasGflwRequiredInstanceExtensions() const;
+  bool checkDeviceExtensionSupport(VkPhysicalDevice device) const;
   SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 
   VkInstance instance;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GameEngine_device.hpp"
+#include "Rendering/device/GameEngine_device.hpp"
 
 
 #define GLM_FORCE_RADIANS
@@ -21,20 +21,20 @@ namespace GameEngine {
 			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 		};
 
-		LveModel(RenderDevice &device, const std::vector<Vertex> &vertices);
+		LveModel(GeDevice &device, const std::vector<Vertex> &vertices);
 		~LveModel();
 
 		LveModel(const LveModel&) = delete;
 		LveModel& operator=(const LveModel&) = delete;
 
-		void bind(VkCommandBuffer commandbuffer);
-		void draw(VkCommandBuffer commandbuffer);
+		void bind(VkCommandBuffer commandbuffer) const;
+		void draw(VkCommandBuffer commandbuffer) const;
 
 
 	private:
 		void createVertexBuffers(const std::vector<Vertex> &vertices);
 
-		RenderDevice &lveDevice;
+		GeDevice &lveDevice;
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexBufferMemory;
 		uint32_t vertexCount;
