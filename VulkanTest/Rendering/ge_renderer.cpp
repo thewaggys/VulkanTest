@@ -101,7 +101,7 @@ namespace GameEngine {
 		isFrameStarted = false;
 		currentFrameIndex = (currentFrameIndex + 1) % GameEngineSwapChain::MAX_FRAMES_IN_FLIGHT;
 	}
-	void GeRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
+	void GeRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) const{
 		assert(isFrameStarted && "can't call beginSwapChainRenderPass when frame doesn't exist");
 		assert(
 			commandBuffer == getCurrentCommandBuffer() &&
@@ -130,7 +130,7 @@ namespace GameEngine {
 		viewport.height = static_cast<float>(geSwapChain->getSwapChainExtent().height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		VkRect2D scissor{{0,0}, geSwapChain->getSwapChainExtent()};
+		const VkRect2D scissor{{0,0}, geSwapChain->getSwapChainExtent()};
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 	}

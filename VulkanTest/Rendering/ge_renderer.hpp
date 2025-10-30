@@ -34,7 +34,7 @@ namespace GameEngine {
 
         VkCommandBuffer beginFrame();
         void endFrame();
-        void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
+        void beginSwapChainRenderPass(VkCommandBuffer commandBuffer) const;
 
         void endSwapChainRenderPass(VkCommandBuffer commandBuffer) const;
 
