@@ -10,33 +10,35 @@
 #include <vector>
 
 namespace GameEngine {
-	class LveModel {
-	public:
+    class LveModel {
+    public:
+        struct Vertex {
+            glm::vec3 position;
+            glm::vec3 color;
 
-		struct Vertex {
-			glm::vec2 position;
-			glm::vec3 color;
-			
-			static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
-			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
-		};
+            static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
 
-		LveModel(GeDevice &device, const std::vector<Vertex> &vertices);
-		~LveModel();
+            static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
+        };
 
-		LveModel(const LveModel&) = delete;
-		LveModel& operator=(const LveModel&) = delete;
+        LveModel(GeDevice &device, const std::vector<Vertex> &vertices);
 
-		void bind(VkCommandBuffer commandbuffer) const;
-		void draw(VkCommandBuffer commandbuffer) const;
+        ~LveModel();
 
+        LveModel(const LveModel &) = delete;
 
-	private:
-		void createVertexBuffers(const std::vector<Vertex> &vertices);
+        LveModel &operator=(const LveModel &) = delete;
 
-		GeDevice &lveDevice;
-		VkBuffer vertexBuffer;
-		VkDeviceMemory vertexBufferMemory;
-		uint32_t vertexCount;
-	};
+        void bind(VkCommandBuffer commandbuffer) const;
+
+        void draw(VkCommandBuffer commandbuffer) const;
+
+    private:
+        void createVertexBuffers(const std::vector<Vertex> &vertices);
+
+        GeDevice &lveDevice;
+        VkBuffer vertexBuffer;
+        VkDeviceMemory vertexBufferMemory;
+        uint32_t vertexCount;
+    };
 }

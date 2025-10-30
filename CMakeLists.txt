@@ -36,6 +36,8 @@ VulkanTest/Rendering/ge_renderer.cpp
 VulkanTest/Rendering/ge_renderer.hpp
 VulkanTest/Rendering/Shaders/simple_render_system.cpp
 VulkanTest/Rendering/Shaders/simple_render_system.hpp
+        VulkanTest/Rendering/ge_camera.cpp
+        VulkanTest/Rendering/ge_camera.hpp
 )
 
 
