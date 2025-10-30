@@ -20,6 +20,7 @@ namespace GameEngine {
         GeRenderer &operator=(const GeRenderer&) = delete;
 
         VkRenderPass getSwapChainRenderPass() const { return geSwapChain->getRenderPass(); };
+        float getAspectRatio() const { return geSwapChain->extentAspectRatio(); };
         bool isFrameInProgress() const {return isFrameStarted;}
 
         VkCommandBuffer getCurrentCommandBuffer() const {
@@ -34,8 +35,7 @@ namespace GameEngine {
 
         VkCommandBuffer beginFrame();
         void endFrame();
-        void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
-
+        void beginSwapChainRenderPass(VkCommandBuffer commandBuffer) const;
         void endSwapChainRenderPass(VkCommandBuffer commandBuffer) const;
 
     private:
